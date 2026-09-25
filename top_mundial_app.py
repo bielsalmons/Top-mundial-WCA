@@ -46,10 +46,6 @@ if wca_id:
         if evento_elegido:
             st.subheader(f"Competidor: {nombre_completo}")
 
-            # Variables para almacenar los totales globales
-            total_avg = None
-            total_single = None
-
             # --- TARJETA AVERAGE ---
             fila_avg = df_averages[df_averages["eventId"] == evento_elegido]
 
@@ -62,6 +58,10 @@ if wca_id:
                     f"{fila_avg['best'].values[0] / 100:.2f}s".replace(".", ",")
                 )
                 top_avg_fmt = f"{(rank_avg / total_avg):.3%}".replace(".", ",")
+
+                # Formatear números con puntos de miles
+                rank_avg_str = f"{rank_avg:,}".replace(",", ".")
+                total_avg_str = f"{total_avg:,}".replace(",", ".")
 
                 html_card_avg = f"""
                 <div style="
@@ -79,14 +79,15 @@ if wca_id:
                     <div>
                         <h3 style="margin: 0; font-size: 18px; color: #FFFFFF;">Average ({evento_elegido})</h3>
                         <p style="margin: 5px 0 0 0; color: #A0A0B0; font-size: 14px;">Tiempo oficial: <b>{tiempo_avg}</b></p>
-                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_avg:,}</b></p>
+                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_avg_str}</b></p>
+                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Total competidores: <b style="color: #FFFFFF;">{total_avg_str}</b></p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 12px; color: #A0A0B0; text-transform: uppercase;">Top Mundial</span>
                         <h2 style="margin: 0; color: #00C853; font-size: 24px; font-weight: 800;">{top_avg_fmt}</h2>
                     </div>
                 </div>
-                """.replace(",", ".") # Formatear los separadores de miles del rank
+                """
 
                 st.markdown(html_card_avg, unsafe_allow_html=True)
             else:
@@ -111,6 +112,10 @@ if wca_id:
                     ".", ","
                 )
 
+                # Formatear números con puntos de miles
+                rank_single_str = f"{rank_single:,}".replace(",", ".")
+                total_single_str = f"{total_single:,}".replace(",", ".")
+
                 html_card_single = f"""
                 <div style="
                     background: linear-gradient(135deg, #1e1e2f 0%, #11111d 100%);
@@ -126,34 +131,20 @@ if wca_id:
                     <div>
                         <h3 style="margin: 0; font-size: 18px; color: #FFFFFF;">Single ({evento_elegido})</h3>
                         <p style="margin: 5px 0 0 0; color: #A0A0B0; font-size: 14px;">Tiempo oficial: <b>{tiempo_single}</b></p>
-                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_single:,}</b></p>
+                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_single_str}</b></p>
+                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Total competidores: <b style="color: #FFFFFF;">{total_single_str}</b></p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 12px; color: #A0A0B0; text-transform: uppercase;">Top Mundial</span>
                         <h2 style="margin: 0; color: #00C853; font-size: 24px; font-weight: 800;">{top_single_fmt}</h2>
                     </div>
                 </div>
-                """.replace(",", ".") # Formatear los separadores de miles del rank
+                """
 
                 st.markdown(html_card_single, unsafe_allow_html=True)
             else:
                 st.info(
                     f"El competidor no tiene registro de **Single** en la categoría {evento_elegido}."
-                )
-
-            # --- TOTALES GLOBALES (Fuera de las tarjetas) ---
-            st.write("")
-            if total_avg:
-                st.caption(
-                    f"🌐 Total de competidores mundiales en **Average ({evento_elegido})**: {total_avg:,}".replace(
-                        ",", "."
-                    )
-                )
-            if total_single:
-                st.caption(
-                    f"🌐 Total de competidores mundiales en **Single ({evento_elegido})**: {total_single:,}".replace(
-                        ",", "."
-                    )
                 )
     else:
         st.error("No se encontró el WCA_ID introducido.")
