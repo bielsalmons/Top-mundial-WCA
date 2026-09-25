@@ -61,7 +61,6 @@ if wca_id:
                 tiempo_avg = (
                     f"{fila_avg['best'].values[0] / 100:.2f}s".replace(".", ",")
                 )
-                # Formateado a 3 decimales y con coma decimal
                 top_avg_fmt = f"{(rank_avg / total_avg):.3%}".replace(".", ",")
 
                 html_card_avg = f"""
@@ -80,13 +79,15 @@ if wca_id:
                     <div>
                         <h3 style="margin: 0; font-size: 18px; color: #FFFFFF;">Average ({evento_elegido})</h3>
                         <p style="margin: 5px 0 0 0; color: #A0A0B0; font-size: 14px;">Tiempo oficial: <b>{tiempo_avg}</b></p>
+                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_avg:,}</b></p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 12px; color: #A0A0B0; text-transform: uppercase;">Top Mundial</span>
                         <h2 style="margin: 0; color: #00C853; font-size: 24px; font-weight: 800;">{top_avg_fmt}</h2>
                     </div>
                 </div>
-                """
+                """.replace(",", ".") # Formatear los separadores de miles del rank
+
                 st.markdown(html_card_avg, unsafe_allow_html=True)
             else:
                 st.info(
@@ -106,7 +107,6 @@ if wca_id:
                         ".", ","
                     )
                 )
-                # Formateado a 3 decimales y con coma decimal
                 top_single_fmt = f"{(rank_single / total_single):.3%}".replace(
                     ".", ","
                 )
@@ -126,13 +126,15 @@ if wca_id:
                     <div>
                         <h3 style="margin: 0; font-size: 18px; color: #FFFFFF;">Single ({evento_elegido})</h3>
                         <p style="margin: 5px 0 0 0; color: #A0A0B0; font-size: 14px;">Tiempo oficial: <b>{tiempo_single}</b></p>
+                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_single:,}</b></p>
                     </div>
                     <div style="text-align: right;">
                         <span style="font-size: 12px; color: #A0A0B0; text-transform: uppercase;">Top Mundial</span>
                         <h2 style="margin: 0; color: #00C853; font-size: 24px; font-weight: 800;">{top_single_fmt}</h2>
                     </div>
                 </div>
-                """
+                """.replace(",", ".") # Formatear los separadores de miles del rank
+
                 st.markdown(html_card_single, unsafe_allow_html=True)
             else:
                 st.info(
