@@ -4,9 +4,67 @@ import streamlit as st
 
 st.title("Top mundial WCA por Evento")
 
-# 1. Entrada del WCA ID
-wca_id = st.text_input("Escribe un WCA_ID: ").strip().upper()
+# Diccionario para traducir IDs a nombres oficiales
+NOMBRES_EVENTOS = {
+    "222": "2x2x2 Cube",
+    "333": "3x3x3 Cube",
+    "444": "4x4x4 Cube",
+    "555": "5x5x5 Cube",
+    "666": "6x6x6 Cube",
+    "777": "7x7x7 Cube",
+    "333bf": "3x3x3 Blindfolded",
+    "333fm": "3x3x3 Fewest Moves",
+    "333oh": "3x3x3 One-Handed",
+    "clock": "Clock",
+    "minx": "Megaminx",
+    "pyram": "Pyraminx",
+    "skewb": "Skewb",
+    "sq1": "Square-1",
+    "444bf": "4x4x4 Blindfolded",
+    "555bf": "5x5x5 Blindfolded",
+    "333mbf": "3x3x3 Multi-Blind",
+}
 
+# Campo único de entrada
+busqueda_input = st.text_input("Escribe un WCA ID o un nombre:").strip()
+
+wca_id = None
+
+if busqueda_input:
+    # 1. Si coincide con el formato estándar de un WCA ID (Ej: 2018GARC01)
+    if (
+        len(busqueda_input) == 10
+        and busqueda_input[:4].isdigit()
+        and busqueda_input[4:8].isalpha()
+        and busqueda_input[8:].isdigit()
+    ):
+        wca_id = busqueda_input.upper()
+    else:
+        # 2. Si es un nombre, consultar la API de búsqueda WCA
+        url_search = f"https://www.worldcubeassociation.org/api/v0/search/users?q={busqueda_input}"
+        resp_search = requests.get(url_search)
+
+        if resp_search.status_code == 200:
+            resultados = resp_search.json().get("result", [])
+            personas = [
+                u for u in resultados if u.get("wca_id") is not None
+            ]
+
+            if personas:
+                opciones_personas = {
+                    f"{p['name']} ({p['wca_id']})": p["wca_id"] for p in personas
+                }
+                persona_elegida = st.selectbox(
+                    "Selecciona el competidor:",
+                    options=list(opciones_personas.keys()),
+                )
+                wca_id = opciones_personas[persona_elegida]
+            else:
+                st.warning(
+                    "No se encontraron competidores con WCA ID para esa búsqueda."
+                )
+
+# --- PROCESAMIENTO Y TARJETAS ---
 if wca_id:
     URL_PERSON = f"https://raw.githubusercontent.com/robiningelbrecht/wca-rest-api/refs/heads/v1/persons/{wca_id}.json"
     respuesta_raw = requests.get(URL_PERSON)
@@ -29,7 +87,7 @@ if wca_id:
             else df_singles["name"].values[0]
         )
 
-        # 2. Obtener lista única de eventos
+        # Obtener lista única de eventos
         eventos_avg = (
             df_averages["eventId"].tolist() if not df_averages.empty else []
         )
@@ -38,13 +96,22 @@ if wca_id:
         )
         eventos_disponibles = sorted(list(set(eventos_avg + eventos_single)))
 
-        # 3. Desplegable dinámico
+        # Desplegable dinámico de eventos
         evento_elegido = st.selectbox(
-            "Selecciona un evento:", options=eventos_disponibles
+            "Selecciona un evento:",
+            options=eventos_disponibles,
+            format_func=lambda x: NOMBRES_EVENTOS.get(x, x),
         )
 
         if evento_elegido:
-            st.subheader(f"Competidor: {nombre_completo}")
+            nombre_evento = NOMBRES_EVENTOS.get(evento_elegido, evento_elegido)
+
+            # Subcabecera con Competidor y Evento
+            st.subheader(f"Competidor: {nombre_completo} ({wca_id})")
+            st.markdown(
+                f"<p style='font-size: 15px; color: #D4AF37; margin-top: -12px; margin-bottom: 20px; font-weight: 600;'>Evento: <span style='color: #FFFFFF;'>{nombre_evento}</span></p>",
+                unsafe_allow_html=True,
+            )
 
             # --- TARJETA AVERAGE ---
             fila_avg = df_averages[df_averages["eventId"] == evento_elegido]
@@ -59,32 +126,37 @@ if wca_id:
                 )
                 top_avg_fmt = f"{(rank_avg / total_avg):.3%}".replace(".", ",")
 
-                # Formatear números con puntos de miles
                 rank_avg_str = f"{rank_avg:,}".replace(",", ".")
                 total_avg_str = f"{total_avg:,}".replace(",", ".")
 
                 html_card_avg = f"""
                 <div style="
-                    background: linear-gradient(135deg, #1e1e2f 0%, #11111d 100%);
-                    border: 2px solid #2b2b3d;
-                    border-radius: 16px;
-                    padding: 20px 25px;
+                    background: radial-gradient(circle at top left, #1A1A1A 0%, #0D0D0D 100%);
+                    border: 1px solid #D4AF37;
+                    border-left: 5px solid #FFD700;
+                    border-radius: 12px;
+                    padding: 16px 22px;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
                     color: white;
-                    margin-bottom: 20px;
+                    margin-bottom: 16px;
                 ">
-                    <div>
-                        <h3 style="margin: 0; font-size: 18px; color: #FFFFFF;">Average ({evento_elegido})</h3>
-                        <p style="margin: 5px 0 0 0; color: #A0A0B0; font-size: 14px;">Tiempo oficial: <b>{tiempo_avg}</b></p>
-                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_avg_str}</b></p>
-                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Total competidores: <b style="color: #FFFFFF;">{total_avg_str}</b></p>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 13px; font-weight: 800; color: #D4AF37; letter-spacing: 1.5px; text-transform: uppercase;">Average</span>
+                        <div style="font-size: 14px; color: #E0E0E0;">
+                            Tiempo: <b style="color: #FFFFFF;">{tiempo_avg}</b> 
+                            <span style="color: #D4AF37; margin: 0 6px;">|</span> 
+                            Rank: <b style="color: #FFFFFF;">#{rank_avg_str}</b>
+                        </div>
+                        <div style="font-size: 12px; color: #A0A0A0;">
+                            Total competidores: <span style="color: #FFFFFF;">{total_avg_str}</span>
+                        </div>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 12px; color: #A0A0B0; text-transform: uppercase;">Top Mundial</span>
-                        <h2 style="margin: 0; color: #00C853; font-size: 24px; font-weight: 800;">{top_avg_fmt}</h2>
+                        <div style="font-size: 10px; color: #D4AF37; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 600;">Top Mundial</div>
+                        <div style="font-size: 34px; font-weight: 900; background: linear-gradient(180deg, #FFE57F 0%, #D4AF37 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{top_avg_fmt}</div>
                     </div>
                 </div>
                 """
@@ -92,7 +164,7 @@ if wca_id:
                 st.markdown(html_card_avg, unsafe_allow_html=True)
             else:
                 st.info(
-                    f"El competidor no tiene registro de **Average** en la categoría {evento_elegido}."
+                    f"El competidor no tiene registro de **Average** en **{nombre_evento}**."
                 )
 
             # --- TARJETA SINGLE ---
@@ -112,31 +184,36 @@ if wca_id:
                     ".", ","
                 )
 
-                # Formatear números con puntos de miles
                 rank_single_str = f"{rank_single:,}".replace(",", ".")
                 total_single_str = f"{total_single:,}".replace(",", ".")
 
                 html_card_single = f"""
                 <div style="
-                    background: linear-gradient(135deg, #1e1e2f 0%, #11111d 100%);
-                    border: 2px solid #2b2b3d;
-                    border-radius: 16px;
-                    padding: 20px 25px;
+                    background: radial-gradient(circle at top left, #1A1A1A 0%, #0D0D0D 100%);
+                    border: 1px solid #D4AF37;
+                    border-left: 5px solid #FFD700;
+                    border-radius: 12px;
+                    padding: 16px 22px;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
                     color: white;
                 ">
-                    <div>
-                        <h3 style="margin: 0; font-size: 18px; color: #FFFFFF;">Single ({evento_elegido})</h3>
-                        <p style="margin: 5px 0 0 0; color: #A0A0B0; font-size: 14px;">Tiempo oficial: <b>{tiempo_single}</b></p>
-                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Ranking mundial: <b style="color: #FFFFFF;">#{rank_single_str}</b></p>
-                        <p style="margin: 3px 0 0 0; color: #A0A0B0; font-size: 13px;">Total competidores: <b style="color: #FFFFFF;">{total_single_str}</b></p>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <span style="font-size: 13px; font-weight: 800; color: #D4AF37; letter-spacing: 1.5px; text-transform: uppercase;">Single</span>
+                        <div style="font-size: 14px; color: #E0E0E0;">
+                            Tiempo: <b style="color: #FFFFFF;">{tiempo_single}</b> 
+                            <span style="color: #D4AF37; margin: 0 6px;">|</span> 
+                            Rank: <b style="color: #FFFFFF;">#{rank_single_str}</b>
+                        </div>
+                        <div style="font-size: 12px; color: #A0A0A0;">
+                            Total competidores: <span style="color: #FFFFFF;">{total_single_str}</span>
+                        </div>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 12px; color: #A0A0B0; text-transform: uppercase;">Top Mundial</span>
-                        <h2 style="margin: 0; color: #00C853; font-size: 24px; font-weight: 800;">{top_single_fmt}</h2>
+                        <div style="font-size: 10px; color: #D4AF37; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 600;">Top Mundial</div>
+                        <div style="font-size: 34px; font-weight: 900; background: linear-gradient(180deg, #FFE57F 0%, #D4AF37 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{top_single_fmt}</div>
                     </div>
                 </div>
                 """
@@ -144,7 +221,7 @@ if wca_id:
                 st.markdown(html_card_single, unsafe_allow_html=True)
             else:
                 st.info(
-                    f"El competidor no tiene registro de **Single** en la categoría {evento_elegido}."
+                    f"El competidor no tiene registro de **Single** en **{nombre_evento}**."
                 )
     else:
-        st.error("No se encontró el WCA_ID introducido.")
+        st.error("No se encontraron registros para el WCA ID indicado.")
